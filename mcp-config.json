@@ -1,0 +1,21 @@
+{
+  "mcpServers": {
+    "mongodb": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-mongodb"
+      ],
+      "env": {
+        "MONGODB_URI": "mongodb://localhost:27017/employee_management"
+      }
+    },
+    "browser": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-browser"
+      ]
+    }
+  }
+}
