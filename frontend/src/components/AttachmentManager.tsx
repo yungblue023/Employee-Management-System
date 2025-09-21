@@ -1,0 +1,304 @@
+import React, { useState, useEffect } from 'react';
+import { EmployeeAttachment } from '../types/Employee';
+import EmployeeAPI from '../services/api';
+import './AttachmentManager.css';
+
+interface AttachmentManagerProps {
+  employeeId: string;
+  employeeName: string;
+  isInline?: boolean; // For inline display in employee list
+}
+
+const AttachmentManager: React.FC<AttachmentManagerProps> = ({ 
+  employeeId, 
+  employeeName, 
+  isInline = false 
+}) => {
+  const [attachments, setAttachments] = useState<EmployeeAttachment[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [showUploadModal, setShowUploadModal] = useState(false);
+  const [previewFileUrl, setPreviewFileUrl] = React.useState<string | null>(null);
+  const [previewFileType, setPreviewFileType] = React.useState<string>('');
+  const [previewLoading, setPreviewLoading] = React.useState(false);
+
+  useEffect(() => {
+    loadAttachments();
+  }, [employeeId]);
+
+  const loadAttachments = async () => {
+    setLoading(true);
+    try {
+      // Mock data for now - replace with actual API call
+      const mockAttachments: EmployeeAttachment[] = [
+        {
+          id: '1',
+          filename: 'resume.pdf',
+          originalName: 'John_Doe_Resume.pdf',
+          size: 245760,
+          mimeType: 'application/pdf',
+          uploadedAt: new Date().toISOString(),
+          employeeId: employeeId
+        }
+      ];
+      setAttachments(mockAttachments);
+    } catch (err: any) {
+      setError(`Failed to load attachments: ${err.message}`);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    // Validate file size (max 10MB)
+    if (file.size > 10 * 1024 * 1024) {
+      setError('File size must be less than 10MB');
+      return;
+    }
+
+    // Validate file type
+    const allowedTypes = [
+      'application/pdf',
+      'image/jpeg',
+      'image/png',
+      'image/gif',
+      'text/plain',
+      'application/msword',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+    ];
+
+    if (!allowedTypes.includes(file.type)) {
+      setError('File type not supported. Please upload PDF, images, or documents.');
+      return;
+    }
+
+    setUploading(true);
+    setError(null);
+
+    try {
+      // Mock upload - replace with actual API call
+      const newAttachment: EmployeeAttachment = {
+        id: Date.now().toString(),
+        filename: `${Date.now()}_${file.name}`,
+        originalName: file.name,
+        size: file.size,
+        mimeType: file.type,
+        uploadedAt: new Date().toISOString(),
+        employeeId: employeeId
+      };
+
+      setAttachments(prev => [...prev, newAttachment]);
+      
+      // Reset file input
+      event.target.value = '';
+    } catch (err: any) {
+      setError(`Upload failed: ${err.message}`);
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleDelete = async (attachmentId: string) => {
+    if (!window.confirm('Are you sure you want to delete this attachment?')) {
+      return;
+    }
+
+    try {
+      // Mock delete - replace with actual API call
+      setAttachments(prev => prev.filter(att => att.id !== attachmentId));
+    } catch (err: any) {
+      setError(`Failed to delete attachment: ${err.message}`);
+    }
+  };
+
+  const handlePreview = async (attachment: EmployeeAttachment) => {
+    setPreviewLoading(true);
+    try {
+      // Mock preview URL - replace with actual API call
+      const previewUrl = `data:${attachment.mimeType};base64,mock-preview-data`;
+      setPreviewFileUrl(previewUrl);
+      setPreviewFileType(attachment.mimeType);
+    } catch (err: any) {
+      setError(`Failed to preview file: ${err.message}`);
+    } finally {
+      setPreviewLoading(false);
+    }
+  };
+
+  const handleDownload = async (attachment: EmployeeAttachment) => {
+    try {
+      // Mock download - replace with actual API call
+      const link = document.createElement('a');
+      link.href = `data:${attachment.mimeType};base64,mock-file-data`;
+      link.download = attachment.originalName;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } catch (err: any) {
+      setError(`Failed to download file: ${err.message}`);
+    }
+  };
+
+  const formatFileSize = (bytes: number): string => {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  };
+
+  // Inline version for employee list
+  if (isInline) {
+    return (
+      <div className="attachment-inline">
+        <button 
+          className="btn btn-sm btn-outline-primary"
+          onClick={() => setShowUploadModal(true)}
+          title="Manage attachments"
+        >
+          Files ({attachments.length})
+        </button>
+
+        {showUploadModal && (
+          <div className="modal-overlay" onClick={() => setShowUploadModal(false)}>
+            <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+              <div className="modal-header">
+                <h3>Attachments - {employeeName}</h3>
+                <button 
+                  className="btn-close"
+                  onClick={() => setShowUploadModal(false)}
+                >
+                  ×
+                </button>
+              </div>
+              <div className="modal-body attachment-preview-modal">
+                <AttachmentManager 
+                  employeeId={employeeId} 
+                  employeeName={employeeName} 
+                  isInline={false} 
+                />
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  // Full version for modal/edit form
+  return (
+    <div className="attachment-manager">
+      <div className="attachment-header">
+        <h4>Employee Attachments</h4>
+        <div className="upload-section">
+          <input
+            type="file"
+            id="file-upload"
+            name="file"
+            onChange={handleFileUpload}
+            disabled={uploading}
+            style={{ display: 'none' }}
+          />
+          <label 
+            htmlFor="file-upload" 
+            className={`btn btn-primary ${uploading ? 'disabled' : ''}`}
+          >
+            {uploading ? 'Uploading...' : 'Upload File'}
+          </label>
+        </div>
+      </div>
+
+      {error && (
+        <div className="alert alert-danger">
+          {error}
+          <button 
+            className="btn-close-alert"
+            onClick={() => setError(null)}
+          >
+            ×
+          </button>
+        </div>
+      )}
+
+      {loading ? (
+        <div className="loading">Loading attachments...</div>
+      ) : attachments.length === 0 ? (
+        <div className="no-attachments">
+          No attachments uploaded yet.
+        </div>
+      ) : (
+        <div className="attachment-list">
+          {attachments.map((attachment) => (
+            <div key={attachment.id} className="attachment-item">
+              <div className="attachment-info">
+                <div className="attachment-name">{attachment.originalName}</div>
+                <div className="attachment-meta">
+                  {formatFileSize(attachment.size)} • {new Date(attachment.uploadedAt).toLocaleDateString()}
+                </div>
+              </div>
+              <div className="attachment-actions">
+                <button 
+                  className="btn btn-sm btn-outline-secondary"
+                  onClick={() => handlePreview(attachment)}
+                  disabled={previewLoading}
+                >
+                  Preview
+                </button>
+                <button 
+                  className="btn btn-sm btn-outline-primary"
+                  onClick={() => handleDownload(attachment)}
+                >
+                  Download
+                </button>
+                <button 
+                  className="btn btn-sm btn-outline-danger"
+                  onClick={() => handleDelete(attachment.id)}
+                >
+                  Delete
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      <div className="upload-info">
+        <small>
+          Supported formats: PDF, Images (JPG, PNG, GIF), Documents (DOC, DOCX), Text files<br/>
+          Maximum file size: 10MB
+        </small>
+      </div>
+
+      {previewFileUrl && (
+        <div className="modal-overlay" onClick={() => setPreviewFileUrl(null)}>
+          <div className="modal-content preview-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3>File Preview</h3>
+              <button 
+                className="btn-close"
+                onClick={() => setPreviewFileUrl(null)}
+              >
+                ×
+              </button>
+            </div>
+            <div className="modal-body">
+              {previewFileType.startsWith('image/') ? (
+                <img src={previewFileUrl} alt="Preview" style={{ maxWidth: '100%', maxHeight: '500px' }} />
+              ) : previewFileType === 'application/pdf' ? (
+                <iframe src={previewFileUrl} style={{ width: '100%', height: '500px' }} />
+              ) : (
+                <div>Preview not available for this file type</div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default AttachmentManager;

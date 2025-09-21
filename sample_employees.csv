@@ -1,0 +1,26 @@
+employee_id,name,age,department,salary,hire_date
+EMP001,John Smith,28,Engineering,75000,2023-01-15
+EMP002,Sarah Johnson,32,Marketing,68000,2022-11-20
+EMP003,Michael Brown,45,Engineering,95000,2021-03-10
+EMP004,Emily Davis,29,HR,62000,2023-02-28
+EMP005,David Wilson,38,Finance,82000,2022-08-14
+EMP006,Lisa Anderson,26,Marketing,58000,2023-05-12
+EMP007,Robert Taylor,41,Engineering,88000,2021-09-05
+EMP008,Jennifer Martinez,33,HR,65000,2022-12-03
+EMP009,Christopher Lee,36,Finance,79000,2022-06-18
+EMP010,Amanda White,31,Marketing,71000,2023-01-08
+EMP011,James Garcia,27,Engineering,73000,2023-03-22
+EMP012,Michelle Rodriguez,39,Finance,85000,2021-11-15
+EMP013,Daniel Thompson,34,HR,67000,2022-10-07
+EMP014,Jessica Moore,30,Marketing,69000,2023-04-14
+EMP015,Kevin Jackson,42,Engineering,92000,2021-07-25
+EMP016,Ashley Harris,25,HR,59000,2023-06-01
+EMP017,Ryan Clark,37,Finance,81000,2022-04-12
+EMP018,Stephanie Lewis,35,Marketing,72000,2022-09-28
+EMP019,Brandon Walker,29,Engineering,76000,2023-02-10
+EMP020,Nicole Hall,43,Finance,89000,2021-12-18
+EMP021,Tyler Allen,32,HR,64000,2022-07-30
+EMP022,Samantha Young,28,Marketing,66000,2023-03-05
+EMP023,Jonathan King,40,Engineering,87000,2021-10-22
+EMP024,Rachel Wright,26,HR,61000,2023-05-20
+EMP025,Matthew Lopez,44,Finance,91000,2021-08-08
