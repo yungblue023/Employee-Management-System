@@ -54,6 +54,17 @@ coverage/
 *.tmp
 *.temp
 
+# Uploads and user data
+backend/uploads/
+uploads/
+test_*.csv
+sample_*.csv
+
+# Database files
+*.db
+*.sqlite
+*.sqlite3
+
 # AI Assistant Rules
 .clinerules/byterover-rules.md
 .kilocode/rules/byterover-rules.md

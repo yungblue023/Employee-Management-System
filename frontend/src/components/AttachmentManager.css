@@ -230,11 +230,20 @@
 }
 
 .preview-modal {
-  max-width: 800px;
+  max-width: 95vw;
+  max-height: 95vh;
+  width: 95vw;
+  height: 95vh;
 }
 
 .preview-modal .modal-body {
   text-align: center;
+  padding: 10px;
+  height: calc(100% - 60px);
+  overflow: auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .attachment-preview-modal {

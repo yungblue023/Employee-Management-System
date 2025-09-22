@@ -23,11 +23,18 @@ const api = axios.create({
   },
 });
 
-// Request interceptor for logging
+// Request interceptor for logging and authentication
 api.interceptors.request.use(
   (config) => {
     console.log(`API Request: ${config.method?.toUpperCase()} ${config.baseURL}${config.url}`);
     console.log('Full config:', config);
+
+    // Add authentication token if available
+    const token = localStorage.getItem('access_token');
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+
     return config;
   },
   (error) => {
@@ -51,6 +58,15 @@ api.interceptors.response.use(
       status: error.response?.status,
       url: error.config?.url
     });
+
+    // Handle 401 Unauthorized - redirect to login
+    if (error.response?.status === 401) {
+      console.log('401 Unauthorized - redirecting to login');
+      localStorage.removeItem('access_token');
+      localStorage.removeItem('current_user');
+      window.location.href = '/login';
+    }
+
     return Promise.reject(error);
   }
 );
@@ -246,6 +262,103 @@ export class EmployeeAPI {
     try {
       const response = await axios.get('http://localhost:8000/health');
       return response.data;
+    } catch (error: any) {
+      throw this.handleError(error);
+    }
+  }
+
+  /**
+   * Upload file for employee
+   */
+  static async uploadFile(employeeId: string, file: File): Promise<any> {
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+
+      const response = await api.post(`/employees/${employeeId}/files/upload`, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+      return response.data;
+    } catch (error: any) {
+      throw this.handleError(error);
+    }
+  }
+
+  /**
+   * Get files for employee
+   */
+  static async getEmployeeFiles(employeeId: string): Promise<any[]> {
+    try {
+      const response = await api.get(`/employees/${employeeId}/files`);
+      return response.data;
+    } catch (error: any) {
+      throw this.handleError(error);
+    }
+  }
+
+  /**
+   * Download file
+   */
+  static async downloadFile(fileId: string): Promise<void> {
+    try {
+      const response = await api.get(`/files/${fileId}/download`, {
+        responseType: 'blob',
+      });
+
+      // Get content type and filename from response headers
+      const contentType = response.headers['content-type'] || 'application/octet-stream';
+      const contentDisposition = response.headers['content-disposition'];
+      let filename = 'download';
+
+      if (contentDisposition) {
+        const filenameMatch = contentDisposition.match(/filename="(.+)"/);
+        if (filenameMatch) {
+          filename = filenameMatch[1];
+        }
+      }
+
+      // Create download link with proper MIME type
+      const blob = new Blob([response.data], { type: contentType });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch (error: any) {
+      throw this.handleError(error);
+    }
+  }
+
+  /**
+   * Get file preview data with authentication
+   */
+  static async getFilePreview(fileId: string): Promise<{ blob: Blob; mimeType: string }> {
+    try {
+      const response = await api.get(`/files/${fileId}/preview`, {
+        responseType: 'blob',
+      });
+
+      const contentType = response.headers['content-type'] || 'application/octet-stream';
+      return {
+        blob: response.data,
+        mimeType: contentType
+      };
+    } catch (error: any) {
+      throw this.handleError(error);
+    }
+  }
+
+  /**
+   * Delete file
+   */
+  static async deleteFile(fileId: string): Promise<void> {
+    try {
+      await api.delete(`/files/${fileId}`);
     } catch (error: any) {
       throw this.handleError(error);
     }

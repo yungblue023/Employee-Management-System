@@ -27,22 +27,20 @@ const AttachmentManager: React.FC<AttachmentManagerProps> = ({
     loadAttachments();
   }, [employeeId]);
 
+  // Cleanup blob URL on component unmount
+  useEffect(() => {
+    return () => {
+      if (previewFileUrl) {
+        window.URL.revokeObjectURL(previewFileUrl);
+      }
+    };
+  }, [previewFileUrl]);
+
   const loadAttachments = async () => {
     setLoading(true);
     try {
-      // Mock data for now - replace with actual API call
-      const mockAttachments: EmployeeAttachment[] = [
-        {
-          id: '1',
-          filename: 'resume.pdf',
-          originalName: 'John_Doe_Resume.pdf',
-          size: 245760,
-          mimeType: 'application/pdf',
-          uploadedAt: new Date().toISOString(),
-          employeeId: employeeId
-        }
-      ];
-      setAttachments(mockAttachments);
+      const files = await EmployeeAPI.getEmployeeFiles(employeeId);
+      setAttachments(files);
     } catch (err: any) {
       setError(`Failed to load attachments: ${err.message}`);
     } finally {
@@ -80,19 +78,9 @@ const AttachmentManager: React.FC<AttachmentManagerProps> = ({
     setError(null);
 
     try {
-      // Mock upload - replace with actual API call
-      const newAttachment: EmployeeAttachment = {
-        id: Date.now().toString(),
-        filename: `${Date.now()}_${file.name}`,
-        originalName: file.name,
-        size: file.size,
-        mimeType: file.type,
-        uploadedAt: new Date().toISOString(),
-        employeeId: employeeId
-      };
+      await EmployeeAPI.uploadFile(employeeId, file);
+      await loadAttachments(); // Reload attachments after upload
 
-      setAttachments(prev => [...prev, newAttachment]);
-      
       // Reset file input
       event.target.value = '';
     } catch (err: any) {
@@ -108,8 +96,8 @@ const AttachmentManager: React.FC<AttachmentManagerProps> = ({
     }
 
     try {
-      // Mock delete - replace with actual API call
-      setAttachments(prev => prev.filter(att => att.id !== attachmentId));
+      await EmployeeAPI.deleteFile(attachmentId);
+      await loadAttachments(); // Reload attachments after delete
     } catch (err: any) {
       setError(`Failed to delete attachment: ${err.message}`);
     }
@@ -118,10 +106,10 @@ const AttachmentManager: React.FC<AttachmentManagerProps> = ({
   const handlePreview = async (attachment: EmployeeAttachment) => {
     setPreviewLoading(true);
     try {
-      // Mock preview URL - replace with actual API call
-      const previewUrl = `data:${attachment.mimeType};base64,mock-preview-data`;
+      const { blob, mimeType } = await EmployeeAPI.getFilePreview(attachment.id);
+      const previewUrl = window.URL.createObjectURL(blob);
       setPreviewFileUrl(previewUrl);
-      setPreviewFileType(attachment.mimeType);
+      setPreviewFileType(mimeType);
     } catch (err: any) {
       setError(`Failed to preview file: ${err.message}`);
     } finally {
@@ -131,16 +119,17 @@ const AttachmentManager: React.FC<AttachmentManagerProps> = ({
 
   const handleDownload = async (attachment: EmployeeAttachment) => {
     try {
-      // Mock download - replace with actual API call
-      const link = document.createElement('a');
-      link.href = `data:${attachment.mimeType};base64,mock-file-data`;
-      link.download = attachment.originalName;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
+      await EmployeeAPI.downloadFile(attachment.id);
     } catch (err: any) {
       setError(`Failed to download file: ${err.message}`);
     }
+  };
+
+  const closePreview = () => {
+    if (previewFileUrl) {
+      window.URL.revokeObjectURL(previewFileUrl);
+    }
+    setPreviewFileUrl(null);
   };
 
   const formatFileSize = (bytes: number): string => {
@@ -274,22 +263,40 @@ const AttachmentManager: React.FC<AttachmentManagerProps> = ({
       </div>
 
       {previewFileUrl && (
-        <div className="modal-overlay" onClick={() => setPreviewFileUrl(null)}>
+        <div className="modal-overlay" onClick={closePreview}>
           <div className="modal-content preview-modal" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
               <h3>File Preview</h3>
-              <button 
+              <button
                 className="btn-close"
-                onClick={() => setPreviewFileUrl(null)}
+                onClick={closePreview}
               >
                 ×
               </button>
             </div>
             <div className="modal-body">
               {previewFileType.startsWith('image/') ? (
-                <img src={previewFileUrl} alt="Preview" style={{ maxWidth: '100%', maxHeight: '500px' }} />
+                <img
+                  src={previewFileUrl}
+                  alt="Preview"
+                  style={{
+                    maxWidth: '100%',
+                    maxHeight: '80vh',
+                    objectFit: 'contain',
+                    display: 'block',
+                    margin: '0 auto'
+                  }}
+                />
               ) : previewFileType === 'application/pdf' ? (
-                <iframe src={previewFileUrl} style={{ width: '100%', height: '500px' }} />
+                <iframe
+                  src={previewFileUrl}
+                  style={{
+                    width: '100%',
+                    height: '80vh',
+                    border: 'none',
+                    borderRadius: '4px'
+                  }}
+                />
               ) : (
                 <div>Preview not available for this file type</div>
               )}

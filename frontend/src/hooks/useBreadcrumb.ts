@@ -167,37 +167,50 @@ export const useUrlBreadcrumb = (pathname: string): BreadcrumbItem[] => {
     const segments = pathname.split('/').filter(Boolean);
     const items: BreadcrumbItem[] = [];
 
-    // Always start with home
+    // Handle dashboard routes (both / and /dashboard)
+    const isDashboard = pathname === '/' || pathname === '/dashboard';
+
+    // Always start with dashboard
     items.push({
-      label: 'Home',
+      label: 'Dashboard',
       path: '/',
-      isActive: segments.length === 0
+      isActive: isDashboard
     });
 
-    // Build breadcrumb from URL segments
-    let currentPath = '';
-    segments.forEach((segment, index) => {
-      currentPath += `/${segment}`;
-      const isLast = index === segments.length - 1;
-      
-      // Convert segment to readable label
-      let label = segment.charAt(0).toUpperCase() + segment.slice(1);
-      if (segment === 'employees') {
-        label = 'Employees';
-      } else if (segment === 'add') {
-        label = 'Add Employee';
-      } else if (segment === 'edit') {
-        label = 'Edit Employee';
-      } else if (segment === 'import') {
-        label = 'Import Employees';
-      }
+    // If we're on /dashboard specifically, we're done
+    if (pathname === '/dashboard') {
+      return items;
+    }
 
-      items.push({
-        label,
-        path: currentPath,
-        isActive: isLast
+    // Build breadcrumb from URL segments (skip if we're on root dashboard)
+    if (!isDashboard) {
+      let currentPath = '';
+      segments.forEach((segment, index) => {
+        currentPath += `/${segment}`;
+        const isLast = index === segments.length - 1;
+
+        // Convert segment to readable label
+        let label = segment.charAt(0).toUpperCase() + segment.slice(1);
+        if (segment === 'employees') {
+          label = 'Employees';
+        } else if (segment === 'add') {
+          label = 'Add Employee';
+        } else if (segment === 'edit') {
+          label = 'Edit Employee';
+        } else if (segment === 'import') {
+          label = 'Import Employees';
+        } else if (segment === 'dashboard') {
+          // Skip dashboard segment as it's already handled above
+          return;
+        }
+
+        items.push({
+          label,
+          path: currentPath,
+          isActive: isLast
+        });
       });
-    });
+    }
 
     return items;
   }, [pathname]);

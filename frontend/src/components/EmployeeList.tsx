@@ -8,6 +8,7 @@ import { useNavigate } from 'react-router-dom';
 import EmployeeAPI from '../services/api';
 import { Employee, DEPARTMENTS } from '../types/Employee';
 import EmployeeModal from './EmployeeModal';
+import AttachmentManager from './AttachmentManager';
 
 interface EmployeeListProps {
   onEmployeeChange: () => void;
@@ -29,6 +30,8 @@ const EmployeeList: React.FC<EmployeeListProps> = ({ onEmployeeChange, onEditEmp
   const [exporting, setExporting] = useState(false);
   const [sortBy, setSortBy] = useState<'name' | 'age' | 'salary' | 'hire_date'>('name');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
+  const [showAttachmentModal, setShowAttachmentModal] = useState(false);
+  const [selectedEmployeeForAttachments, setSelectedEmployeeForAttachments] = useState<Employee | null>(null);
 
   useEffect(() => {
     fetchEmployees();
@@ -181,6 +184,16 @@ const EmployeeList: React.FC<EmployeeListProps> = ({ onEmployeeChange, onEditEmp
   const getSortIcon = (field: string) => {
     if (sortBy !== field) return '↕️';
     return sortOrder === 'asc' ? '↑' : '↓';
+  };
+
+  const handleOpenAttachments = (employee: Employee) => {
+    setSelectedEmployeeForAttachments(employee);
+    setShowAttachmentModal(true);
+  };
+
+  const handleCloseAttachments = () => {
+    setShowAttachmentModal(false);
+    setSelectedEmployeeForAttachments(null);
   };
 
   // Get unique departments from current employees
@@ -391,7 +404,11 @@ const EmployeeList: React.FC<EmployeeListProps> = ({ onEmployeeChange, onEditEmp
                   <td className="files">
                     {employee.files && employee.files.length > 0 ? (
                       <div className="file-count">
-                        <span className="file-badge">
+                        <span
+                          className="file-badge"
+                          onClick={() => handleOpenAttachments(employee)}
+                          title="Click to view and manage files"
+                        >
                           {employee.files.length} file{employee.files.length !== 1 ? 's' : ''}
                         </span>
                         <div className="file-list">
@@ -403,7 +420,13 @@ const EmployeeList: React.FC<EmployeeListProps> = ({ onEmployeeChange, onEditEmp
                         </div>
                       </div>
                     ) : (
-                      <span className="no-files">No files</span>
+                      <span
+                        className="no-files clickable"
+                        onClick={() => handleOpenAttachments(employee)}
+                        title="Click to upload files"
+                      >
+                        No files
+                      </span>
                     )}
                   </td>
                   <td className="actions">
@@ -435,6 +458,29 @@ const EmployeeList: React.FC<EmployeeListProps> = ({ onEmployeeChange, onEditEmp
           onClose={handleModalClose}
           onSuccess={handleModalSuccess}
         />
+      )}
+
+      {showAttachmentModal && selectedEmployeeForAttachments && (
+        <div className="modal-overlay" onClick={handleCloseAttachments}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3>Files for {selectedEmployeeForAttachments.name}</h3>
+              <button
+                className="btn-close"
+                onClick={handleCloseAttachments}
+              >
+                ×
+              </button>
+            </div>
+            <div className="modal-body">
+              <AttachmentManager
+                employeeId={selectedEmployeeForAttachments.employee_id}
+                employeeName={selectedEmployeeForAttachments.name}
+                isInline={false}
+              />
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
